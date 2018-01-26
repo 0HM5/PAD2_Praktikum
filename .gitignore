@@ -33,9 +33,9 @@
 
 
 # additional
-smart pointer performance/nbproject/private/*
-smart pointer performance/build/*
-smart pointer performance/nbbuild/*
-smart pointer performance/dist/*
-smart pointer performance/nbdist/*
+PAD2 Praktikum/nbproject/private/*
+PAD2 Praktikum/build/*
+PAD2 Praktikum/nbbuild/*
+PAD2 Praktikum/dist/*
+PAD2 Praktikum/nbdist/*
 .nb-gradle/*
