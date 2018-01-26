@@ -1,0 +1,7 @@
+Character @ 5 5 ConsoleController 9 9
+Character 0 4 6 ConsoleController 7 5
+Character % 2 2 StationaryController 4 3
+Character \ 2 2 AttackController 18 1
+Greatsword 1 4
+Door 13 9 Lever 11 9
+Trap 10 9
