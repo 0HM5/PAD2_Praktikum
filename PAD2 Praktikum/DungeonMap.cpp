@@ -70,22 +70,21 @@ bool DungeonMap::has_line_of_sight(const position& from, const position& to) con
     bool swaped(false);
 
     if (abs(static_cast<int> (to.column) - static_cast<int> (from.column)) < abs(static_cast<int> (from.row) - static_cast<int> (to.row))) {
-        // oberes und unteres Dreieck vom character
+        // above and below the character
         deltaX = from.row - to.row;
         deltaY = to.column - from.column;
         swaped = true;
-    }
-    else {
-        // seitlichen Dreiecke vom character
+    } else {
+        // left and right of the character
         deltaY = from.row - to.row;
         deltaX = to.column - from.column;
     }
 
     if (!(deltaX == 0 && deltaY == 0)) {
-        double slope = deltaY / static_cast<double> (deltaX); // Steigung der Geraden ermitteln
+        double slope = deltaY / static_cast<double> (deltaX); // get the slope of the straight line
 
-        int count = deltaX / abs(deltaX); // -1 bei negativem deltaX, +1 bei positiven
-        for (int x(deltaX - count); x != 0; x -= count) { // Es wird nur der Bereich zwischen from-to überprüft
+        int count = deltaX / abs(deltaX); // -1 with negatice deltaX, +1 with positive
+        for (int x(deltaX - count); x != 0; x -= count) { // only check the area between from and to
             int y = round(slope * x);
             if (!swaped && !m_data[from.row - y][from.column + x]->is_transparent()) //some magic
                 return false;
@@ -97,158 +96,175 @@ bool DungeonMap::has_line_of_sight(const position& from, const position& to) con
     return true;
 }
 
+/**
+ * Pathing from one point of the map to another, around walls and untriggered 
+ * traps using dijkstra
+ * 
+ * @param from the starting point
+ * @param to the point where that path should end
+ * @return a vector of positions on the map which should all be visited in 
+ * oreder to get to the end the fastest. The first position in the vector is 
+ * visited first.
+ */
 vector<position> DungeonMap::getPathTo(const position& from, const position& to) {
-    vector <position> vorg;
-    vector <Knoten> all_knots;
+    vector <position> pred; // all predecessors of the target position and their predecessors
+    vector <Knot> all_knots; // all positions (knots) on the map, sorted by their distance from the source position
 
     for (unsigned int counter = 0; counter < height; counter++) { // initialise knots for all tiles
         position init_knots_pos{0, counter};
         for (unsigned int position = 0; position < width; position++) {
             init_knots_pos.column = position;
-            Knoten tmp(init_knots_pos);
+            Knot tmp(init_knots_pos);
             all_knots.push_back(tmp);
         }
     }
 
-    all_knots[findPosition(all_knots, to)].set_entf(0);
-
+    all_knots[findPosition(all_knots, to)].set_distance(0); // sets the starting position
     sort(all_knots.begin(), all_knots.end());
 
-    for (unsigned int counter = 0; counter < all_knots.size() - 1; counter++) {
+    for (unsigned int counter = 0; counter < all_knots.size() - 1; counter++) { // check all knots until there is none which are not yet checked
         getAdjacent(all_knots, all_knots[counter]);
         sort(all_knots.begin(), all_knots.end());
     }
 
-    position last = from;
-    while (findVorg(vorg, all_knots, last)) {
+    position last = from; // get rid of the const qualifier
+    while (findPred(pred, all_knots, last)) { // build the vector of predecessors
     }
 
-    return vorg;
+    return pred;
 }
 
-bool DungeonMap::findVorg(vector<position>& vorg, const vector<Knoten>& all, position& to) {
-    for (unsigned int counter = 0; counter < all.size(); counter++) {
-        position tmp = all[counter].get_pos();
-        if (tmp.row == to.row && tmp.column == to.column) {
-            vorg.push_back(all[counter].get_vorg());
-            to = vorg.back();
-            return all[counter].has_vorg();
-        }
-    }
-    throw invalid_argument("Something went wrong and Dijstra just died.");
+/**
+ * finds the predecessor of a knot and appends it to a vector
+ * 
+ * @param vorg the vector that later contains all predecessors
+ * @param all the vector filled with all knots
+ * @param to the target position
+ * @return true if the step needs to be repeated in order to find all stops to 
+ * the target. False if the vector of predecessors is complete or the target is 
+ * unreachable (surrounded by walls etc.)
+ */
+bool DungeonMap::findPred(vector<position>& vorg, const vector<Knot>& all, position& to) {
+    unsigned int tmx = findPosition(all, to);
+    vorg.push_back(all[tmx].get_predecessor());
+    to = vorg.back();
+    return all[tmx].has_predecessor();
 }
 
-unsigned int DungeonMap::findPosition(const vector<Knoten>& all, const position& find) {
+unsigned int DungeonMap::findPosition(const vector<Knot>& all, const position& find) {
     unsigned int size = all.size();
     position tmp;
     for (unsigned int counter = 0; counter < size; counter++) {
-        tmp = all[counter].get_pos();
+        tmp = all[counter].get_position();
         if (tmp.row == find.row && tmp.column == find.column) {
             return counter;
         }
     }
+
     throw invalid_argument("The Position is not saved in the vector with all knots.");
 }
 
-void DungeonMap::getAdjacent(vector<Knoten>& vec, const Knoten& from) {
-    unsigned int zero = 0;
-    if (from.get_entf() == zero - 1) {
+/**
+ * Finds all the tiles adjacent to a starting tile which are on the map and not 
+ * walls or untriggered traps, then calculates their distance from the starting 
+ * position when crossing the current position. If this distance is shorter than 
+ * the current distance, the distance and the predecessor of the position which 
+ * is being checked is updated.
+ * 
+ * @param vec the vector conataining all possible knots
+ * @param from the position of which the adjacent knots should be tested next
+ */
+void DungeonMap::getAdjacent(vector<Knot>& vec, const Knot& from) {
+    unsigned int zero = 0; // needed in order to get the max unsigned int instead of -1 in the next step
+    if (from.get_distance() == zero - 1) { // if the current knot has not yet been visited (eg. its a wall), the function is aborted
         return;
     }
-    Knoten tmp;
-    tmp.set_entf(from.get_entf() + 1);
-    tmp.set_vorg(from.get_pos());
-    unsigned int tmx;
-    position new_pos, old_pos(from.get_pos());
 
-    new_pos.row = old_pos.row + 1;
+    unsigned int dist = from.get_distance() + 1; // distance and predecessor of the next knots
+    position predecessor = from.get_position();
+
+    unsigned int tmp; // position of the next adjacent knot in the vector of all knots
+    position new_pos, old_pos(from.get_position());
+
+    new_pos.row = old_pos.row + 1; // calculate the new position relative to the old one
     new_pos.column = old_pos.column - 1;
-    if (pos_on_map(new_pos)) {
-        tmp.set_pos(new_pos);
-        tmx = findPosition(vec, new_pos);
-        if (vec[tmx].get_entf() > tmp.get_entf() && findTile(new_pos)->on_enter_def()) {
-            vec[tmx].set_entf(tmp.get_entf());
-            vec[tmx].set_vorg(tmp.get_vorg());
+    if (pos_on_map(new_pos)) { // is the new position on the map?
+        tmp = findPosition(vec, new_pos);
+        if (vec[tmp].get_distance() > dist && findTile(new_pos)->on_enter_def()) { // if the next knot has been visited and has a lower distance, is a wall or an  untriggered trap, it is skipped
+            vec[tmp].set_distance(dist);
+            vec[tmp].set_predecessor(predecessor);
         }
     }
     new_pos.row = old_pos.row + 1;
-    new_pos.column = old_pos.column;
+    new_pos.column = old_pos.column; // repeat the above for all 8 adjacent tiles
     if (pos_on_map(new_pos)) {
-        tmp.set_pos(new_pos);
-        tmx = findPosition(vec, new_pos);
-        if (vec[tmx].get_entf() > tmp.get_entf() && findTile(new_pos)->on_enter_def()) {
-            vec[tmx].set_entf(tmp.get_entf());
-            vec[tmx].set_vorg(tmp.get_vorg());
+        tmp = findPosition(vec, new_pos);
+        if (vec[tmp].get_distance() > dist && findTile(new_pos)->on_enter_def()) {
+            vec[tmp].set_distance(dist);
+            vec[tmp].set_predecessor(predecessor);
         }
     }
     new_pos.row = old_pos.row + 1;
     new_pos.column = old_pos.column + 1;
     if (pos_on_map(new_pos)) {
-        tmp.set_pos(new_pos);
-        tmx = findPosition(vec, new_pos);
-        if (vec[tmx].get_entf() > tmp.get_entf() && findTile(new_pos)->on_enter_def()) {
-            vec[tmx].set_entf(tmp.get_entf());
-            vec[tmx].set_vorg(tmp.get_vorg());
+        tmp = findPosition(vec, new_pos);
+        if (vec[tmp].get_distance() > dist && findTile(new_pos)->on_enter_def()) {
+            vec[tmp].set_distance(dist);
+            vec[tmp].set_predecessor(predecessor);
         }
     }
     new_pos.row = old_pos.row;
     new_pos.column = old_pos.column - 1;
     if (pos_on_map(new_pos)) {
-        tmp.set_pos(new_pos);
-        tmx = findPosition(vec, new_pos);
-        if (vec[tmx].get_entf() > tmp.get_entf() && findTile(new_pos)->on_enter_def()) {
-            vec[tmx].set_entf(tmp.get_entf());
-            vec[tmx].set_vorg(tmp.get_vorg());
+        tmp = findPosition(vec, new_pos);
+        if (vec[tmp].get_distance() > dist && findTile(new_pos)->on_enter_def()) {
+            vec[tmp].set_distance(dist);
+            vec[tmp].set_predecessor(predecessor);
         }
     }
     new_pos.row = old_pos.row;
     new_pos.column = old_pos.column;
     if (pos_on_map(new_pos)) {
-        tmp.set_pos(new_pos);
-        tmx = findPosition(vec, new_pos);
-        if (vec[tmx].get_entf() > tmp.get_entf() && findTile(new_pos)->on_enter_def()) {
-            vec[tmx].set_entf(tmp.get_entf());
-            vec[tmx].set_vorg(tmp.get_vorg());
+        tmp = findPosition(vec, new_pos);
+        if (vec[tmp].get_distance() > dist && findTile(new_pos)->on_enter_def()) {
+            vec[tmp].set_distance(dist);
+            vec[tmp].set_predecessor(predecessor);
         }
     }
     new_pos.row = old_pos.row;
     new_pos.column = old_pos.column + 1;
     if (pos_on_map(new_pos)) {
-        tmp.set_pos(new_pos);
-        tmx = findPosition(vec, new_pos);
-        if (vec[tmx].get_entf() > tmp.get_entf() && findTile(new_pos)->on_enter_def()) {
-            vec[tmx].set_entf(tmp.get_entf());
-            vec[tmx].set_vorg(tmp.get_vorg());
+        tmp = findPosition(vec, new_pos);
+        if (vec[tmp].get_distance() > dist && findTile(new_pos)->on_enter_def()) {
+            vec[tmp].set_distance(dist);
+            vec[tmp].set_predecessor(predecessor);
         }
     }
     new_pos.row = old_pos.row - 1;
     new_pos.column = old_pos.column - 1;
     if (pos_on_map(new_pos)) {
-        tmp.set_pos(new_pos);
-        tmx = findPosition(vec, new_pos);
-        if (vec[tmx].get_entf() > tmp.get_entf() && findTile(new_pos)->on_enter_def()) {
-            vec[tmx].set_entf(tmp.get_entf());
-            vec[tmx].set_vorg(tmp.get_vorg());
+        tmp = findPosition(vec, new_pos);
+        if (vec[tmp].get_distance() > dist && findTile(new_pos)->on_enter_def()) {
+            vec[tmp].set_distance(dist);
+            vec[tmp].set_predecessor(predecessor);
         }
     }
     new_pos.row = old_pos.row - 1;
     new_pos.column = old_pos.column;
     if (pos_on_map(new_pos)) {
-        tmp.set_pos(new_pos);
-        tmx = findPosition(vec, new_pos);
-        if (vec[tmx].get_entf() > tmp.get_entf() && findTile(new_pos)->on_enter_def()) {
-            vec[tmx].set_entf(tmp.get_entf());
-            vec[tmx].set_vorg(tmp.get_vorg());
+        tmp = findPosition(vec, new_pos);
+        if (vec[tmp].get_distance() > dist && findTile(new_pos)->on_enter_def()) {
+            vec[tmp].set_distance(dist);
+            vec[tmp].set_predecessor(predecessor);
         }
     }
     new_pos.row = old_pos.row - 1;
     new_pos.column = old_pos.column + 1;
     if (pos_on_map(new_pos)) {
-        tmp.set_pos(new_pos);
-        tmx = findPosition(vec, new_pos);
-        if (vec[tmx].get_entf() > tmp.get_entf() && findTile(new_pos)->on_enter_def()) {
-            vec[tmx].set_entf(tmp.get_entf());
-            vec[tmx].set_vorg(tmp.get_vorg());
+        tmp = findPosition(vec, new_pos);
+        if (vec[tmp].get_distance() > dist && findTile(new_pos)->on_enter_def()) {
+            vec[tmp].set_distance(dist);
+            vec[tmp].set_predecessor(predecessor);
         }
     }
     return;
@@ -300,11 +316,9 @@ DungeonMap::DungeonMap(const vector <string>& data, const vector<string>& act_pa
             for (unsigned int position = 0; position < width; position++) {
                 if (tiles[position] == '.') {
                     m_data[counter][position] = new Floor();
-                }
-                else if (tiles[position] == '#') {
+                } else if (tiles[position] == '#') {
                     m_data[counter][position] = new Wall();
-                }
-                else {
+                } else {
                     throw std::runtime_error("Invalid Tile Char. u dick");
                 }
             }
@@ -329,16 +343,14 @@ DungeonMap::DungeonMap(const vector <string>& data, const vector<string>& act_pa
 
                 if (amount_space == 5) {
                     ccin >> name1 >> pos_1 >> name2 >> pos_2;
-                }
-                else if (amount_space == 2) {
+                } else if (amount_space == 2) {
                     ccin >> name1 >> pos_1;
-                }else if(amount_space == 6){
+                } else if (amount_space == 6) {
                     continue;
                 }
 
                 if (name1 == "Character") {
-                }
-                else if (name1 == "Door") {
+                } else if (name1 == "Door") {
 
                     Tile* old1;
                     Tile* old2;
@@ -355,45 +367,34 @@ DungeonMap::DungeonMap(const vector <string>& data, const vector<string>& act_pa
                         delete old2;
                         if (name2 == "Switch") {
                             m_data[pos_2.row][pos_2.column] = new Switch();
-                        }
-                        else if (name2 == "Lever") {
+                        } else if (name2 == "Lever") {
                             m_data[pos_2.row][pos_2.column] = new Lever();
                         }
                         swi = findTile(pos_2);
                         dynamic_cast<Active*> (swi)->set_passive(dynamic_cast<Passive*> (door));
-                    }
-                    catch (const invalid_argument& ia) {
+                    } catch (const invalid_argument& ia) {
                         cerr << "One of the positions specified in the active/passive pair #" << counter << " is not on tha map.\n";
                     }
-                }
-                else if (name1 == "Trap") {
+                } else if (name1 == "Trap") {
                     delete findTile(pos_1);
                     m_data[pos_1.row][pos_1.column] = new Trap();
-                }
-                else if (amount_space == 2) {
+                } else if (amount_space == 2) {
                     Item* tmp5 = 0;
                     if (name1 == "Arming_Sword") {
                         tmp5 = new Arming_Sword;
-                    }
-                    else if (name1 == "Greatsword") {
+                    } else if (name1 == "Greatsword") {
                         tmp5 = new Greatsword;
-                    }
-                    else if (name1 == "Club") {
+                    } else if (name1 == "Club") {
                         tmp5 = new Club;
-                    }
-                    else if (name1 == "Rapier_Dagger") {
+                    } else if (name1 == "Rapier_Dagger") {
                         tmp5 = new Rapier_Dagger;
-                    }
-                    else if (name1 == "Gambeson") {
+                    } else if (name1 == "Gambeson") {
                         tmp5 = new Gambeson;
-                    }
-                    else if (name1 == "Mail_Armour") {
+                    } else if (name1 == "Mail_Armour") {
                         tmp5 = new Mail_Armour;
-                    }
-                    else if (name1 == "Shield") {
+                    } else if (name1 == "Shield") {
                         tmp5 = new Shield;
-                    }
-                    else if (name1 == "Full_Plate_Armour") {
+                    } else if (name1 == "Full_Plate_Armour") {
                         tmp5 = new Full_Plate_Armour;
                     }
                     if (tmp5 != 0) {

@@ -14,7 +14,7 @@
       <itemPath>Floor.h</itemPath>
       <itemPath>GameEngine.h</itemPath>
       <itemPath>Item.h</itemPath>
-      <itemPath>Knoten.h</itemPath>
+      <itemPath>Knot.h</itemPath>
       <itemPath>Lever.h</itemPath>
       <itemPath>Passive.h</itemPath>
       <itemPath>StationaryController.h</itemPath>
@@ -40,7 +40,7 @@
       <itemPath>Floor.cpp</itemPath>
       <itemPath>GameEngine.cpp</itemPath>
       <itemPath>Item.cpp</itemPath>
-      <itemPath>Knoten.cpp</itemPath>
+      <itemPath>Knot.cpp</itemPath>
       <itemPath>Lever.cpp</itemPath>
       <itemPath>Passive.cpp</itemPath>
       <itemPath>StationaryController.cpp</itemPath>
@@ -61,6 +61,7 @@
                    kind="IMPORTANT_FILES_FOLDER">
       <itemPath>Makefile</itemPath>
       <itemPath>lvl1act.txt</itemPath>
+      <itemPath>lvl1act_2console.txt</itemPath>
       <itemPath>lvl1map.txt</itemPath>
     </logicalFolder>
   </logicalFolder>
@@ -117,9 +118,9 @@
       </item>
       <item path="Item.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="Knoten.cpp" ex="false" tool="1" flavor2="0">
+      <item path="Knot.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="Knoten.h" ex="false" tool="3" flavor2="0">
+      <item path="Knot.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Lever.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -212,9 +213,9 @@
       </item>
       <item path="Item.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="Knoten.cpp" ex="false" tool="1" flavor2="0">
+      <item path="Knot.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="Knoten.h" ex="false" tool="3" flavor2="0">
+      <item path="Knot.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Lever.cpp" ex="false" tool="1" flavor2="0">
       </item>

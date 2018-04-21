@@ -13,7 +13,7 @@
 #include "Trap.h"
 #include "Lever.h"
 #include "Item.h"
-#include "Knoten.h"
+#include "Knot.h"
 
 using namespace std;
 
@@ -36,9 +36,9 @@ public:
     //DungeonMap(const DungeonMap& orig);
     virtual ~DungeonMap();
 private:
-    void getAdjacent(vector<Knoten>& vec, const Knoten& from);
-    bool findVorg(vector<position>& vorg, const vector<Knoten>& all, position& to);
-    unsigned int findPosition(const vector<Knoten>& all, const position& find);
+    void getAdjacent(vector<Knot>& vec, const Knot& from);
+    bool findPred(vector<position>& vorg, const vector<Knot>& all, position& to);
+    unsigned int findPosition(const vector<Knot>& all, const position& find);
     bool pos_on_map(position& check);
     
     unsigned int height;

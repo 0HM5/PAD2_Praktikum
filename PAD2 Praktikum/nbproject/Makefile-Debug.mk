@@ -14,15 +14,15 @@ GREP=grep
 NM=nm
 CCADMIN=CCadmin
 RANLIB=ranlib
-CC=clang
-CCC=clang++
-CXX=clang++
+CC=gcc
+CCC=g++
+CXX=g++
 FC=gfortran
 AS=as
 
 # Macros
-CND_PLATFORM=CLang-Linux
-CND_DLIB_EXT=so
+CND_PLATFORM=Cygwin-Windows
+CND_DLIB_EXT=dll
 CND_CONF=Debug
 CND_DISTDIR=dist
 CND_BUILDDIR=build
@@ -45,7 +45,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/Floor.o \
 	${OBJECTDIR}/GameEngine.o \
 	${OBJECTDIR}/Item.o \
-	${OBJECTDIR}/Knoten.o \
+	${OBJECTDIR}/Knot.o \
 	${OBJECTDIR}/Lever.o \
 	${OBJECTDIR}/Passive.o \
 	${OBJECTDIR}/StationaryController.o \
@@ -74,9 +74,9 @@ LDLIBSOPTIONS=
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/pad2_praktikum
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/pad2_praktikum.exe
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/pad2_praktikum: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/pad2_praktikum.exe: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/pad2_praktikum ${OBJECTFILES} ${LDLIBSOPTIONS}
 
@@ -130,10 +130,10 @@ ${OBJECTDIR}/Item.o: Item.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Item.o Item.cpp
 
-${OBJECTDIR}/Knoten.o: Knoten.cpp
+${OBJECTDIR}/Knot.o: Knot.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Knoten.o Knoten.cpp
+	$(COMPILE.cc) -g -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Knot.o Knot.cpp
 
 ${OBJECTDIR}/Lever.o: Lever.cpp
 	${MKDIR} -p ${OBJECTDIR}
